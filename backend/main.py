@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import random
 from copy import deepcopy
+from collections import defaultdict
 
 app = Flask(__name__)
 CORS(app)
@@ -91,6 +92,105 @@ def mutar(individuo, catalogo, prob_mut=0.1):
     return individuo
 
 
+def generar_distribucion_completa(mejor_global, catalogo, mejor_area, mejor_ganancia):
+    """
+    Genera una distribución completa con múltiples perspectivas analíticas.
+    Combina: eficiencia, contribución porcentual, ranking de impacto y análisis por categoría.
+    """
+    
+    # 1. Distribución detallada por artículo
+    distribucion_articulos = []
+    
+    for q, item in zip(mejor_global, catalogo):
+        if q > 0:
+            area_total = q * item["area"]
+            ganancia_total = q * item["ganancia"]
+            eficiencia = item["ganancia"] / item["area"] if item["area"] > 0 else 0
+            
+            distribucion_articulos.append({
+                "id": item["id"],
+                "nombre": item["nombre"],
+                "cantidad": q,
+                "eficiencia": round(eficiencia, 4),
+                "area": item["area"],
+                "areaTotal": round(area_total, 4),
+                "ganancia": item["ganancia"],
+                "gananciaTotal": ganancia_total,
+                "porcentajeGanancia": round((ganancia_total / mejor_ganancia * 100), 2) if mejor_ganancia > 0 else 0,
+                "porcentajeArea": round((area_total / mejor_area * 100), 2) if mejor_area > 0 else 0,
+            })
+    
+    # 2. Ordenar por impacto en ganancia (más importante primero)
+    distribucion_articulos.sort(key=lambda x: x["gananciaTotal"], reverse=True)
+    
+    # 3. Agregar ranking de impacto
+    for idx, item in enumerate(distribucion_articulos, 1):
+        item["rankingImpacto"] = idx
+    
+    # 4. Análisis por categoría (si existe)
+    categoria_stats = defaultdict(lambda: {
+        "cantidad_articulos": 0,
+        "cantidad_unidades": 0,
+        "ganancia_total": 0,
+        "area_total": 0,
+        "eficiencia_promedio": 0
+    })
+    
+    eficiencias_por_categoria = defaultdict(list)
+    
+    for item in distribucion_articulos:
+        categoria = next(
+            (cat.get("categoria", "Sin categoría") for cat in catalogo if cat.get("id") == item["id"]),
+            "Sin categoría"
+        )
+        
+        categoria_stats[categoria]["cantidad_articulos"] += 1
+        categoria_stats[categoria]["cantidad_unidades"] += item["cantidad"]
+        categoria_stats[categoria]["ganancia_total"] += item["gananciaTotal"]
+        categoria_stats[categoria]["area_total"] += item["areaTotal"]
+        eficiencias_por_categoria[categoria].append(item["eficiencia"])
+    
+    # Calcular eficiencia promedio por categoría
+    distribucion_por_categoria = []
+    for categoria, stats in categoria_stats.items():
+        eficiencia_prom = sum(eficiencias_por_categoria[categoria]) / len(eficiencias_por_categoria[categoria])
+        distribucion_por_categoria.append({
+            "categoria": categoria,
+            "cantidadArticulos": stats["cantidad_articulos"],
+            "cantidadUnidades": stats["cantidad_unidades"],
+            "gananciaTotal": stats["ganancia_total"],
+            "areaTotal": round(stats["area_total"], 4),
+            "eficienciaPromedio": round(eficiencia_prom, 4),
+            "porcentajeGananciaTotal": round((stats["ganancia_total"] / mejor_ganancia * 100), 2) if mejor_ganancia > 0 else 0
+        })
+    
+    distribucion_por_categoria.sort(key=lambda x: x["gananciaTotal"], reverse=True)
+    
+    # 5. Métricas resumen
+    articulos_seleccionados = len(distribucion_articulos)
+    unidades_totales = sum(item["cantidad"] for item in distribucion_articulos)
+    eficiencia_global = mejor_ganancia / mejor_area if mejor_area > 0 else 0
+    
+    resumen_metricas = {
+        "articulosSeleccionados": articulos_seleccionados,
+        "unidadesTotales": unidades_totales,
+        "gananciaTotal": mejor_ganancia,
+        "areaTotal": round(mejor_area, 4),
+        "eficienciaGlobal": round(eficiencia_global, 4),
+        "utilizacionArea": round((mejor_area / AREA_MAXIMA * 100), 2),
+        "gananciaPromedioPorArticulo": round((mejor_ganancia / articulos_seleccionados), 2) if articulos_seleccionados > 0 else 0,
+        "areaPromedoPorArticulo": round((mejor_area / articulos_seleccionados), 4) if articulos_seleccionados > 0 else 0
+    }
+    
+    return {
+        "resumen": resumen_metricas,
+        "distribucionArticulos": distribucion_articulos,
+        "distribucionPorCategoria": distribucion_por_categoria,
+        "articulosMasEficientes": sorted(distribucion_articulos, key=lambda x: x["eficiencia"], reverse=True)[:5],
+        "articulosConMayorImpacto": distribucion_articulos[:5]
+    }
+
+
 def ejecutar_algoritmo_genetico(params):
     """Ejecuta el algoritmo genético con los parámetros dados."""
     # Extraer parámetros
@@ -161,26 +261,12 @@ def ejecutar_algoritmo_genetico(params):
     mejor_area = sum(q * item["area"] for q, item in zip(mejor_global, catalogo))
     mejor_ganancia = sum(q * item["ganancia"] for q, item in zip(mejor_global, catalogo))
     
-    # Crear distribución de artículos
-    distribucion = []
-    for q, item in zip(mejor_global, catalogo):
-        if q > 0:
-            distribucion.append({
-                "id": item["id"],
-                "nombre": item["nombre"],
-                "cantidad": q,
-                "area": item["area"],
-                "ganancia": item["ganancia"],
-                "areaTotal": q * item["area"],
-                "gananciaTotal": q * item["ganancia"]
-            })
+    # Generar distribución completa
+    distribucion_completa = generar_distribucion_completa(mejor_global, catalogo, mejor_area, mejor_ganancia)
     
     return {
         "mejorSolucion": mejor_global,
-        "distribucion": distribucion,
-        "areaTotal": mejor_area,
-        "gananciaTotal": mejor_ganancia,
-        "utilizacionArea": (mejor_area / AREA_MAXIMA) * 100,
+        "distribucion": distribucion_completa,
         "historialFitness": historial_fitness,
         "parametros": {
             "tamPoblacion": tam_poblacion,

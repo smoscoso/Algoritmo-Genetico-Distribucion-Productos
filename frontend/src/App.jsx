@@ -657,7 +657,7 @@ function App() {
                   </div>
                   <div className="stat-content">
                     <div className="stat-label">Ganancia Total</div>
-                    <div className="stat-value">${resultado.gananciaTotal.toFixed(2)}</div>
+                    <div className="stat-value">${resultado.distribucion.resumen.gananciaTotal.toFixed(2)}</div>
                     <div className="stat-trend">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -675,7 +675,7 @@ function App() {
                   </div>
                   <div className="stat-content">
                     <div className="stat-label">Área Utilizada</div>
-                    <div className="stat-value">{resultado.areaTotal.toFixed(2)} m²</div>
+                    <div className="stat-value">{resultado.distribucion.resumen.areaTotal.toFixed(2)} m²</div>
                     <div className="stat-trend">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -694,10 +694,10 @@ function App() {
                   </div>
                   <div className="stat-content">
                     <div className="stat-label">Utilización</div>
-                    <div className="stat-value">{resultado.utilizacionArea.toFixed(1)}%</div>
+                    <div className="stat-value">{resultado.distribucion.resumen.utilizacionArea.toFixed(1)}%</div>
                     <div className="stat-trend">
                       <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${resultado.utilizacionArea}%` }}></div>
+                        <div className="progress-fill" style={{ width: `${resultado.distribucion.resumen.utilizacionArea}%` }}></div>
                       </div>
                     </div>
                   </div>
@@ -727,7 +727,7 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {resultado.distribucion.map((item, index) => (
+                      {resultado.distribucion.distribucionArticulos.map((item, index) => (
                         <tr key={item.id}>
                           <td>
                             <div className="table-cell-with-badge">
@@ -765,7 +765,7 @@ function App() {
                 Distribución Espacial 2D
               </h2>
               <p className="section-subtitle">Visualización de la disposición óptima de artículos</p>
-              <DistributionCanvas distribucion={resultado.distribucion} />
+              <DistributionCanvas distribucion={resultado.distribucion.distribucionArticulos} />
             </section>
 
             <section className="section">
