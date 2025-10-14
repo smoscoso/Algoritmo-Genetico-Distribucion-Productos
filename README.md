@@ -71,29 +71,6 @@ npm start
 
 El frontend estará disponible en `http://localhost:3000`
 
-## 📦 Estructura del Proyecto
-
-\`\`\`
-├── backend/
-│   ├── main.py                    # Servidor Flask + Algoritmo Genético
-│   └── requirements.txt           # Dependencias de Python
-├── frontend/
-│   ├── public/
-│   │   └── index.html
-│   ├── src/
-│   │   ├── App.jsx               # Componente principal
-│   │   ├── App.css               # Estilos
-│   │   ├── index.jsx             # Punto de entrada
-│   │   └── components/
-│   │       ├── DistributionCanvas.jsx
-│   │       └── ConvergenceChart.jsx
-│   └── package.json              # Dependencias de Node
-├── public/
-│   └── resultados_ejemplo.json   # Ejemplo de salida
-├── README.md
-└── INFORME.md
-\`\`\`
-
 ## 🎮 Uso
 
 ### 1. Configurar Catálogo
@@ -228,10 +205,6 @@ Si el puerto 5000 o 3000 está ocupado:
 - Actualiza `API_URL` en `frontend/src/App.jsx`
 
 ## 👨‍💻 Autor
-
+Sergio Leonardo Moscoso
 Desarrollado para el curso de Machine Learning - Algoritmos Genéticos
 Universidad de Cundinamarca - Ingeniería de Sistemas y Computación
-
-## 📝 Licencia
-
-MIT
